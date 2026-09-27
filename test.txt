@@ -5,3 +5,183 @@ this is my first testing github
 this is my first testing github
 this is my first testing github
 this is my first testing github
+Below is a complete basic structure.
+
+1. Create the SQL Server database
+CREATE DATABASE LoginDB;
+GO
+
+USE LoginDB;
+GO
+
+CREATE TABLE Users
+(
+    UserId INT IDENTITY(1,1) PRIMARY KEY,
+    Username VARCHAR(50) NOT NULL UNIQUE,
+    PasswordHash VARCHAR(255) NOT NULL
+);
+
+2. C# SQL connection
+
+For a Windows Forms project, create a connection string:
+
+using System.Data.SqlClient;
+
+string connectionString =
+    @"Server=.\SQLEXPRESS;Database=LoginDB;Trusted_Connection=True;";
+
+If you are using another SQL Server instance, change .\SQLEXPRESS accordingly.
+
+For example:
+
+string connectionString =
+    @"Server=localhost;Database=LoginDB;Trusted_Connection=True;";
+3. Login form
+
+Suppose your form has:
+
+Username: [____________]
+
+Password: [____________]
+
+         [ Login ]
+
+Controls:
+
+txtUsername
+txtPassword
+btnLogin
+
+Then the login button can use:
+
+using System;
+using System.Data.SqlClient;
+using System.Windows.Forms;
+
+namespace LoginSystem
+{
+    public partial class LoginForm : Form
+    {
+        string connectionString =
+            @"Server=.\SQLEXPRESS;Database=LoginDB;Trusted_Connection=True;";
+
+        public LoginForm()
+        {
+            InitializeComponent();
+        }
+
+        private void btnLogin_Click(object sender, EventArgs e)
+        {
+            string username = txtUsername.Text.Trim();
+            string password = txtPassword.Text;
+
+            if (username == "" || password == "")
+            {
+                MessageBox.Show("Please enter username and password.");
+                return;
+            }
+
+            string query = @"
+                SELECT UserId, Username, PasswordHash
+                FROM Users
+                WHERE Username = @Username";
+
+            using (SqlConnection con = new SqlConnection(connectionString))
+            using (SqlCommand cmd = new SqlCommand(query, con))
+            {
+                cmd.Parameters.AddWithValue("@Username", username);
+
+                con.Open();
+
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        string storedHash =
+                            reader["PasswordHash"].ToString();
+
+                        // Password verification goes here.
+                        if (password == storedHash)
+                        {
+                            MessageBox.Show("Login successful!");
+
+                            Dashboard dashboard = new Dashboard();
+                            dashboard.Show();
+
+                            this.Hide();
+                        }
+                        else
+                        {
+                            MessageBox.Show("Invalid username or password.");
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show("Invalid username or password.");
+                    }
+                }
+            }
+        }
+    }
+}
+
+Note: The password == storedHash part is only a simple demonstration. For a production application, use a password-hashing library such as BCrypt or Argon2.
+
+4. Insert a test user
+
+For initial testing only:
+
+INSERT INTO Users (Username, PasswordHash)
+VALUES ('admin', '12345');
+
+Then:
+
+Username: admin
+Password: 12345
+
+will work with the demonstration code above.
+
+5. Better project structure
+
+For a proper C# project, I recommend:
+
+LoginSystem
+│
+├── LoginForm.cs
+├── RegisterForm.cs
+├── Dashboard.cs
+│
+├── Database
+│   └── DatabaseConnection.cs
+│
+├── Models
+│   └── User.cs
+│
+└── Services
+    └── AuthenticationService.cs
+
+The flow becomes:
+
+                C# Login Form
+                      │
+                      ▼
+             AuthenticationService
+                      │
+                      ▼
+              DatabaseConnection
+                      │
+                      ▼
+                SQL Server
+                      │
+                      ▼
+                  Users Table
+                      │
+                      ▼
+             Login Success/Failure
+
+If you're developing this as a C# project, I can next give you the 
+complete Visual Studio Windows Forms project code with Register + Login + Logout + SQL Server + password hashing + Dashboard, ready to copy into Visual Studio.
+
+Which do you want: 
+Windows Forms or 
+ASP.NET web login?
